@@ -55,3 +55,27 @@ func GenerateAllToken(email string, firstName string, lastName string, userType 
 
 	return token, refreshToken, err
 }
+
+func UpdateAllTokens(token string, refreshToken string, userID string) {
+	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Second)
+	var updateObj primitive.D
+
+	updateObj = append(updateObj, bson.E{"Token", token})
+	updateObj = append(updateObj, bson.E{"RefreshToken", refreshToken})
+
+	updated_at, _ := time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
+	updateObj = append(updateObj, bson.E{"UpdatedAt", updated_at })
+
+	upsert := true
+	filter := bson.M{"user_id": userID}
+	opt := options.UpdateOptions{
+		Upsert: &upsert,
+	}
+
+	_, err := userCollections.UpdateOne(ctx, filter, bson.M{"$set": updateObj}, &opt)
+	defer cancel()
+	if err!= nil {
+    log.Fatalf("Error while updating user tokens: %v", err)
+		return
+  }
+}
